@@ -51,7 +51,7 @@ def telegram_asistani_yonet(cekilen_notlar):
 
 # 1. Tarayıcı Ayarları
 chrome_options = Options()
-# chrome_options.add_argument("--headless") # Şimdilik bunu açma, botu izle.
+chrome_options.add_argument("--headless") # Şimdilik bunu açma, botu izle.
 chrome_options.add_argument("--window-size=1920,1080")
 
 # 2. Sürücü Başlatma
