@@ -9,8 +9,8 @@ import time
 import requests
 import os
 
-TOKEN = "8020410344:AAEtyi4uHJHoAksIbi5s1r3KQy-SoiEHQxM"
-CHAT_ID = "6567829934"
+TOKEN = os.environ.get("TG_TOKEN", "")
+CHAT_ID = os.environ.get("TG_ID", "")
 HAFIZA_DOSYASI = "notlar_hafiza.txt"
 
 def telegram_asistani_yonet(cekilen_notlar):
