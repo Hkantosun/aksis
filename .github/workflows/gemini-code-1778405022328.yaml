@@ -8,6 +8,8 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # ← BU SATIRI EKLE
     steps:
       - name: Kodu Çek
         uses: actions/checkout@v3
