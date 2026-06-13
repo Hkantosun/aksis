@@ -2,39 +2,56 @@ import requests
 import os
 
 def telegram_asistani_yonet(cekilen_notlar):
-    """
-    Bu fonksiyon sadece bildirim ve hafıza işlerine bakar.
-    Veri çekme işlemi (Scraping) burada yapılmaz, dışarıdan liste olarak gelir.
-    """
-    
-    # --- AYARLAR ---
     TOKEN = "8020410344:AAEtyi4uHJHoAksIbi5s1r3KQy-SoiEHQxM"
     CHAT_ID = "6567829934"
     HAFIZA_DOSYASI = "notlar_hafiza.txt"
-    
-    # 1. HAFIZAYI KONTROL ET
-    # Daha önce kaydedilmiş notlar var mı diye bakıyoruz.
-    eski_notlar = []
+
+    if not cekilen_notlar:
+        print("⚠️ Çekilen not listesi boş, işlem iptal.")
+        return
+
+    # 1. Hafızayı oku
+    eski_notlar = set()
     if os.path.exists(HAFIZA_DOSYASI):
         with open(HAFIZA_DOSYASI, "r", encoding="utf-8") as f:
-            eski_notlar = f.read().splitlines()
-    
-    # 2. KIYASLAMA YAP
-    # Yeni gelen listede olup, eski listede olmayan (yeni açıklanan) notları bulur.
-    yeni_aciklananlar = [not_satiri for not_satiri in cekilen_notlar if not_satiri not in eski_notlar]
-    
-    # 3. AKSİYON AL
+            eski_notlar = set(line.strip() for line in f if line.strip())
+
+    # 2. Gelen notları da set'e çevir (boş satırları temizle)
+    yeni_notlar_set = set(n.strip() for n in cekilen_notlar if n.strip())
+
+    # 3. Farkı bul
+    yeni_aciklananlar = yeni_notlar_set - eski_notlar
+
+    print(f"📂 Hafızadaki not sayısı: {len(eski_notlar)}")
+    print(f"📡 Siteden çekilen not sayısı: {len(yeni_notlar_set)}")
+    print(f"🆕 Yeni not sayısı: {len(yeni_aciklananlar)}")
+
+    # 4. Aksiyon al
     if yeni_aciklananlar:
-        print(f"🔔 Yeni notlar tespit edildi: {len(yeni_aciklananlar)} adet.")
-        
-        # Telegram Mesajını Hazırla
-        duyuru_metni = "🚀 **SİSTEMDEN YENİ BİLDİRİM!**\n\n"
-        duyuru_metni += "Aşağıdaki notların sisteme girildi:\n"
-        duyuru_metni += "\n".join(yeni_aciklananlar)
-        
-        # Telegram API'sine Gönder
+        print(f"🔔 {len(yeni_aciklananlar)} yeni not bulundu, mesaj gönderiliyor...")
+        duyuru_metni = "🚀 *SİSTEMDEN YENİ BİLDİRİM!*\n\n"
+        duyuru_metni += "\n".join(sorted(yeni_aciklananlar))
+
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        payload = {
+        payload = {"chat_id": CHAT_ID, "text": duyuru_metni, "parse_mode": "Markdown"}
+
+        try:
+            response = requests.post(url, data=payload)
+            if response.status_code == 200:
+                print("✅ Telegram bildirimi iletildi.")
+                # Hafızayı sadece başarıda güncelle — TÜM notları yaz
+                with open(HAFIZA_DOSYASI, "w", encoding="utf-8") as f:
+                    f.write("\n".join(sorted(yeni_notlar_set)))
+            else:
+                print(f"❌ Telegram hatası: {response.status_code} - {response.text}")
+        except Exception as e:
+            print(f"⚠️ Telegram bağlantı hatası: {e}")
+    else:
+        print("😴 Yeni not yok, bildirim gönderilmedi.")
+        # Hafıza dosyası yoksa oluştur (ilk çalışma)
+        if not os.path.exists(HAFIZA_DOSYASI):
+            with open(HAFIZA_DOSYASI, "w", encoding="utf-8") as f:
+                f.write("\n".join(sorted(yeni_notlar_set)))        payload = {
             "chat_id": CHAT_ID,
             "text": duyuru_metni,
             "parse_mode": "Markdown"
