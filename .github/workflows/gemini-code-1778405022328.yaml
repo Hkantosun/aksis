@@ -30,10 +30,10 @@ jobs:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_ID: ${{ secrets.TG_ID }}
 
-      - name: Hafızayı Kaydet # Yeni notları buluta geri yükler
+      - name: Hafıza Dosyasını Repoya Geri Kaydet
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add notlar_hafiza.txt
-          git commit -m "Hafıza güncellendi" || echo "Değişiklik yok"
+          git commit -m "🤖 Hafıza dosyası güncellendi [skip ci]" || echo "Değişiklik yok."
           git push
