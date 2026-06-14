@@ -1,3 +1,6 @@
+import os
+import time
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -5,9 +8,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import time
-import requests
-import os
 
 TOKEN = os.environ.get("TG_TOKEN", "")
 CHAT_ID = os.environ.get("TG_ID", "")
@@ -26,16 +26,23 @@ def telegram_asistani_yonet(cekilen_notlar):
     yeni_notlar_set = set(n.strip() for n in cekilen_notlar if n.strip())
     yeni_aciklananlar = yeni_notlar_set - eski_notlar
 
-    print(f"📂 Hafızadaki: {len(eski_notlar)} | Siteden: {len(yeni_notlar_set)} | Yeni: {len(yeni_aciklananlar)}")
+    print(f"📂 Hafızadaki Not Sayısı: {len(eski_notlar)} | Siteden Çekilen: {len(yeni_notlar_set)} | Yeni Saptanan: {len(yeni_aciklananlar)}")
 
     if yeni_aciklananlar:
+        # Hata takibi için yeni algılananları loglara basıyoruz
+        print("🔔 Yeni algılanan içerikler şunlar:")
+        for not_yeri in yeni_aciklananlar:
+            print(f"  -> {not_yeri}")
+
         mesaj = "🚀 *YENİ NOT AÇIKLANDI!*\n\n" + "\n".join(sorted(yeni_aciklananlar))
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
         payload = {"chat_id": CHAT_ID, "text": mesaj, "parse_mode": "Markdown"}
+        
         try:
             res = requests.post(url, data=payload)
             if res.status_code == 200:
-                print("✅ Telegram mesajı gönderildi.")
+                print("✅ Telegram mesajı başarıyla gönderildi.")
+                # Hafızayı güncelle
                 with open(HAFIZA_DOSYASI, "w", encoding="utf-8") as f:
                     f.write("\n".join(sorted(yeni_notlar_set)))
             else:
@@ -44,12 +51,11 @@ def telegram_asistani_yonet(cekilen_notlar):
             print(f"❌ Bağlantı hatası: {e}")
     else:
         print("😴 Yeni not yok, mesaj gönderilmedi.")
-        # İlk çalışmada hafızayı oluştur
         if not os.path.exists(HAFIZA_DOSYASI):
             with open(HAFIZA_DOSYASI, "w", encoding="utf-8") as f:
                 f.write("\n".join(sorted(yeni_notlar_set)))
 
-# ── SELENIUM ──────────────────────────────────────────
+# ── SELENIUM İŞLEMLERİ ──────────────────────────────────────────
 cekilen_notlar = []
 chrome_options = Options()
 chrome_options.add_argument("--headless")
@@ -66,6 +72,8 @@ try:
     driver.get("https://aksis.istanbul.edu.tr/")
     user_input = wait.until(EC.presence_of_element_located((By.ID, "UserName")))
     pass_input = driver.find_element(By.ID, "Password")
+    
+    # Bilgilerini buraya güvenli yoldan veya env ile de verebilirsin
     user_input.send_keys("10724709066")
     pass_input.send_keys("hakan5678")
 
@@ -116,10 +124,11 @@ try:
                 cekilen_notlar.append(final_bilgi)
 
 except Exception as e:
-    print(f"❌ Hata: {e}")
+    print(f"❌ Hata oluştu: {e}")
     driver.save_screenshot("hata_aninda_ekran.png")
 
 finally:
     driver.quit()
 
+# Fonksiyonu sadece bir kez çağırıyoruz
 telegram_asistani_yonet(cekilen_notlar)
